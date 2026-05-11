@@ -1,0 +1,73 @@
+docker --version
+
+sudo docker run hello-world
+
+mkdir my-python-app
+cd my-python-app
+
+nano app.py
+from flask import Flask
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Hello Docker"
+
+if __name__ == "__main__":
+     app.run(host='0.0.0.0', port=5000)
+
+
+nano Dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY app.py .
+CMD ["python", "app.py"]
+
+
+nano requirements.txt
+flask
+
+sudo systemctl start docker
+
+sudo systemctl status docker
+
+docker build -t image-pqr .
+
+| Part         | Meaning            |
+| ------------ | ------------------ |
+| docker build | build image        |
+| -t image-pqr | give image a name  |
+| .            | use current folder |
+
+
+docker images
+
+docker run -d -p 5000:5000 --name container image-pqr
+
+| Part             | Meaning                  |
+| ---------------- | ------------------------ |
+| docker run       | create container         |
+| -d               | detached/background mode |
+| -p 5000:5000     | map ports                |
+| --name container | container name           |
+| image-pqr        | image to use             |
+
+| Host Machine   | Container           |
+| -------------- | ------------------- |
+| localhost:5000 | container port 5000 |
+
+mayur@itsmyhonour:~/my-python-app$ docker run -d -p 5000:5000 --name container image-pqr
+docker: Error response from daemon: Conflict. The container name "/container" is already in use by container "3355052b6e1f1cb684c56ffc47a7398b39c5f986ba9854c39c88f4e198b6a33f". You have to remove (or rename) that container to be able to reuse that name.
+
+Run 'docker run --help' for more information
+
+mayur@itsmyhonour:~/my-python-app$ docker rm -f container
+container
+mayur@itsmyhonour:~/my-python-app$ docker run -d -p 5000:5000 --name container image-pqr
+c180e4e22150db95ee3554d33267e2f3f68f3075e935d2ab264c7f5bb6bcb750
+mayur@itsmyhonour:~/my-python-app$
+
+
+

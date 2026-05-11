@@ -1,0 +1,118 @@
+docker --version
+
+mkdir my-python-app
+cd my-python-app
+
+nano app.py
+nano Dockerfile
+nano requirements.txt
+
+git init
+
+git config --global user.name "Mayur-2403"
+git config --global user.email "mayurmandy1974@gmail.com"
+git add .
+git commit -m "initial commit"
+git remote add origin https://github.com/Mayur-2403/lab5-pp.git
+git branch -m master
+git push -u origin master
+
+ADD JENKINSFILE HERE IN GITHUB
+
+sudo docker build -t my-python-app .
+docker tag my-python-app:latest mayur240305/my-python-app:latest
+docker images
+sudo docker run -d -p 5000:5000 --name container mayur240305/my-python-app:latest
+docker login -u mayur240305
+Password:
+Login Succeeded
+
+sudo docker push mayur240305/my-python-app:latest
+                    OR
+docker push mayur240305/my-python-app:latest
+
+------------------------------------------------------------------------------------------
+rm -rf jenkins.war
+rm -rf ~/.Jenkins
+wget https://get.jenkins.io/war-stable/latest/jenkins.war
+java -jar jenkins.war --httpPort=8080
+
+------------------------------------------------------------------------------------------
+1. app.py
+
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "Hello! Docker is running this Python app successfully and trigger is also working "
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+
+
+2. Dockerfile
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app.py .
+
+EXPOSE 5000
+
+CMD ["python", "app.py"]
+
+
+3.Jenkinsfile
+
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = "mayur240305/my-python-app"
+        DOCKER_TAG = "latest"
+    }
+
+    stages {
+
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t $DOCKER_IMAGE:$DOCKER_TAG .'
+            }
+        }
+
+        stage('Login to DockerHub') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                )]) {
+                    sh 'echo $PASS | docker login -u $USER --password-stdin'
+                }
+            }
+        }
+
+        stage('Push Image') {
+            steps {
+                sh 'docker push $DOCKER_IMAGE:$DOCKER_TAG'
+            }
+        }
+
+        stage('Deploy Container') {
+            steps {
+                sh '''
+                docker stop myapp-container || true
+                docker rm myapp-container || true
+                docker run -d -p 5000:5000 --name myapp-container $DOCKER_IMAGE:$DOCKER_TAG
+                '''
+            }
+        }
+    }
+}
